@@ -141,7 +141,7 @@ const renderForecastCard = (forecast: any) => {
 
 const renderSearchHistory = async (searchHistory: any) => {
   const historyList = await searchHistory.json();
-
+console.log("history: ", historyList)
   if (searchHistoryContainer) {
     searchHistoryContainer.innerHTML = '';
 
