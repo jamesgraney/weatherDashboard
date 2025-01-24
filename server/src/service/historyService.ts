@@ -1,5 +1,6 @@
-import fs from "node:fs/promises"
-// TODO: Define a City class with name and id properties
+import fs from 'node:fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+
 class City {
   name: string;
   id: string;
@@ -9,56 +10,59 @@ class City {
     this.id = id;
   }
 }
-// TODO: Complete the HistoryService class
-class HistoryService {
-  // TODO: Define a read method that reads from the searchHistory.json file
-  // private async read() {}
-  async read() {
-    try {
-      const data = await fs.readFile('./db/searchHistory.json', "utf8"); 
-      return JSON.parse(data);
-    } catch (error) {
-      console.error(`Error reading file:`, error);
-      return [];
-    }
-  }
-  // TODO: Define a write method that writes the updated cities array to the searchHistory.json file
-  // private async write(cities: City[]) {}
 
-  async write(cities: City[]) {
-    try {
-      const jsonData = JSON.stringify(cities, null, 2); 
-      await fs.writeFile('./searchHistory.json', jsonData); 
-      console.log('Cities successfully written to searchHistory.json');
-    } catch (error) {
-      console.error('Error writing to file:', error);
-    }
+class HistoryService {
+  private async read() {
+    return await fs.readFile('db/db.json', {
+      flag: 'a+',
+      encoding: 'utf8',
+    });
   }
-  // TODO: Define a getCities method that reads the cities from the searchHistory.json file and returns them as an array of City objects
-  // async getCities() {}
+
+  private async write(cities: City[]) {
+    return await fs.writeFile('db/db.json', JSON.stringify(cities, null, '\t'));
+  }
+
   async getCities() {
-    try {
-      const data = await this.read(); 
-      return data.map((city:City) => new City(city.name, city.id)); 
-    } catch (error) {
-      console.error('Error getting cities:', error);
-      return [];
-    }
+    return await this.read().then((cities) => {
+      let parsedCities: City[];
+
+      // If cities isn't an array or can't be turned into one, send back a new empty array
+      try {
+        parsedCities = [].concat(JSON.parse(cities));
+      } catch (err) {
+        parsedCities = [];
+      }
+
+      return parsedCities;
+    });
   }
-  // TODO Define an addCity method that adds a city to the searchHistory.json file
-  // async addCity(city: string) {}
+
   async addCity(city: string) {
-    const cities = await this.getCities();
-    cities.push(new City(city, `${Date.now()}`));
-    await this.write(cities);
+    if (!city) {
+      throw new Error('City cannot be blank');
+    }
+
+    // Add a unique id to the city using uuid package
+    const newCity: City = { name: city, id: uuidv4() };
+
+    // Get all cities, add the new city, write all the updated cities, return the newCity
+    return await this.getCities()
+      .then((cities) => {
+        if (cities.find((index) => index.name === city)) {
+          return cities;
+        }
+        return [...cities, newCity];
+      })
+      .then((updatedCities) => this.write(updatedCities))
+      .then(() => newCity);
   }
-  // * BONUS TODO: Define a removeCity method that removes a city from the searchHistory.json file
-  // async removeCity(id: string) {}
+
   async removeCity(id: string) {
-    const cities = await this.getCities();
-    const updatedCities = cities.filter((city:City) => city.id !== id);
-    await this.write(updatedCities);
-}
+    return await this.getCities()
+      .then((cities) => cities.filter((city) => city.id !== id))
+      .then((filteredCities) => this.write(filteredCities));
+  }
 }
 
 export default new HistoryService();

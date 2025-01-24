@@ -1,39 +1,46 @@
-import { Router, type Request, type Response } from 'express';
+//front end sends a fetch request. This should return a valid JSON object to the front-end.
+import { Router } from 'express';
 const router = Router();
 
 import HistoryService from '../../service/historyService.js';
-// import WeatherService from '../../service/weatherService.js';
+import WeatherService from '../../service/weatherService.js';
 
-// TODO: POST Request with city name to retrieve weather data
-router.post('/', async (_req: Request, res: Response) => {
-  // TODO: GET weather data from city name
-  // TODO: save city to search history
+router.post('/', (req: Request, res: Response) => {
   try {
-    res.status(200).json("fetchweather response")
+    const cityName = req.body.cityName;
+
+    WeatherService.getWeatherForCity(cityName).then((data) => {
+      HistoryService.addCity(cityName);
+
+      res.json(data);
+    });
   } catch (error) {
-    console.log(error) 
-    res.status(500).json(error)
+    res.status(500).json(error);
   }
 });
 
-// TODO: GET search history
 router.get('/history', async (_req: Request, res: Response) => {
-  try {
-    const data = await HistoryService.getCities()
-    res.status(200).json(data)
-  } catch (error) {
-    console.log(error) 
-    res.status(500).json(error)
-  }
+  HistoryService.getCities()
+    .then((data) => {
+      return res.json(data);
+    })
+    .catch((err) => {
+      res.status(500).json(err);
+    });
 });
 
-// * BONUS TODO: DELETE city from search history
-router.delete('/history/:id', async (_req: Request, res: Response) => {
+// * BONUS
+router.delete('/history/:id', async (req: Request, res: Response) => {
   try {
-    res.status(200).json("delete history response")
+    if (!req.params.id) {
+      res.status(400).json({ error: 'City ID is required' });
+      return;
+    }
+
+    await HistoryService.removeCity(req.params.id);
+    res.json({ success: 'Removed city from search history' });
   } catch (error) {
-    console.log(error) 
-    res.status(500).json(error)
+    res.status(500).json(error);
   }
 });
 
