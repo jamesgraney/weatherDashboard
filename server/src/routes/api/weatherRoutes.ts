@@ -1,47 +1,32 @@
 //front end sends a fetch request. This should return a valid JSON object to the front-end.
 import { Router } from 'express';
+import weatherService from '../../service/weatherService.js';
+//import { resolveObjectURL } from 'buffer';
 const router = Router();
 
-import HistoryService from '../../service/historyService.js';
-import WeatherService from '../../service/weatherService.js';
+// import HistoryService from '../../service/historyService.js';
+// import WeatherService from '../../service/weatherService.js';
 
-router.post('/', (req: Request, res: Response) => {
-  try {
-    const cityName = req.body.cityName;
+// TODO: POST Request with city name to retrieve weather data
+// JB NOTE: Undo the underscores if you expect this work. :-)
+router.post('/', async(req, res) => {
+  // TODO: GET weather data from city name
+try {
+  const {cityName} = req.body;
+  console.log(`City name received as ${cityName}`);
+  const weatherData = await weatherService.getWeatherForCity(cityName);
+  res.json(weatherData);
+} catch (error) {
+  console.log (`Error from POST Request in weatherRoutes:`, error);  
+}
+  // TODO: save city to search history
 
-    WeatherService.getWeatherForCity(cityName).then((data) => {
-      HistoryService.addCity(cityName);
-
-      res.json(data);
-    });
-  } catch (error) {
-    res.status(500).json(error);
-  }
 });
 
-router.get('/history', async (_req: Request, res: Response) => {
-  HistoryService.getCities()
-    .then((data) => {
-      return res.json(data);
-    })
-    .catch((err) => {
-      res.status(500).json(err);
-    });
-});
+// TODO: GET search history
+router.get('/history', async (_req, _res) => {});
 
-// * BONUS
-router.delete('/history/:id', async (req: Request, res: Response) => {
-  try {
-    if (!req.params.id) {
-      res.status(400).json({ error: 'City ID is required' });
-      return;
-    }
-
-    await HistoryService.removeCity(req.params.id);
-    res.json({ success: 'Removed city from search history' });
-  } catch (error) {
-    res.status(500).json(error);
-  }
-});
+// * BONUS TODO: DELETE city from search history
+router.delete('/history/:id', async (_req, _res) => {});
 
 export default router;
